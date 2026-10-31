@@ -1,0 +1,57 @@
+# Zip files
+*.zip
+
+# Figures
+*.png
+*.pdf
+# Except the files from IOP's template, which latex needs
+!iop-latex-template/*.pdf
+
+# Generated figures and tables
+/figures/
+/tables/
+
+# Data (downloaded or produced by the build)
+/data/
+
+# Build outputs
+/build/
+/compiled-manuscripts/
+
+# pytask's database and lock file
+# (they record what was built on this machine, so mean nothing anywhere else)
+.pytask/
+pytask.lock
+
+# Notebooks (track as .py via jupytext instead)
+*.ipynb
+.ipynb_checkpoints
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+dist/
+
+# Logs
+*.log
+
+# Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Mac stuff
+*.DS_Store
+
+# Temporary (lock) files Office creates while a file is open
+~$*

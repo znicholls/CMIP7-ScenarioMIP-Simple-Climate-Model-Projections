@@ -1,0 +1,9 @@
+# Applied in order (see `apply_replacements` in src/local/iop_latex.py),
+# so a key must come before any key it contains,
+# otherwise the longer key never matches.
+# Every command is \protect-ed, so the replacements also work in moving arguments
+# (section headings, captions).
+CO_2: CO\protect\textsubscript{2}
+CH_4: CH\protect\textsubscript{4}
+N_2O: N\protect\textsubscript{2}O
+W/m^2: W\,m\protect\textsuperscript{$-2$}
