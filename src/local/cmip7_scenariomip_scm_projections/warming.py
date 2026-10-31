@@ -13,6 +13,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from local.cmip7_scenariomip_scm_projections.igcc import (
+    ASSESSED_RATE_PERIOD,
+    get_rate,
+)
 from local.cmip7_scenariomip_scm_projections.magicc_runs import (
     ASSESSED_GSAT_TIMESERIES_FILE,
 )
@@ -35,6 +39,26 @@ TIMESERIES_QUANTILES = (0.05, 0.5, 0.95)
 
 TIMESERIES_FIRST_YEAR = 1850
 """First year of the timeseries we report"""
+
+RATE_PERIODS = (ASSESSED_RATE_PERIOD, (2025, 2034), (2035, 2044), (2045, 2054))
+"""
+First and last year of each period over which we report the rate of warming
+
+IGCC's latest period ([ASSESSED_RATE_PERIOD][(m).]), to compare with their assessment,
+then ten-year periods which IGCC would label by their midpoints
+(2030, 2040 and 2050).
+"""
+
+for _first, _last in RATE_PERIODS:
+    if _last - _first != ASSESSED_RATE_PERIOD[1] - ASSESSED_RATE_PERIOD[0]:
+        msg = f"{(_first, _last)=} should be as long as {ASSESSED_RATE_PERIOD=}"
+        raise AssertionError(msg)
+
+
+def get_rate_period_label(first_year: int, last_year: int) -> str:
+    """Get the label of a rate period (used in our outputs)"""
+    return f"{first_year}-{last_year}"
+
 
 GROUP_LEVELS = ["climate_model", "model", "scenario", "region", "variable", "unit"]
 """Index levels which identify a timeseries (i.e. everything except the ensemble)"""
@@ -167,11 +191,50 @@ def get_peak_year_quantiles(assessed_gsat: pd.DataFrame) -> pd.DataFrame:
     return res
 
 
+def get_rate_quantiles(assessed_gsat: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get the quantiles over the ensemble of the rate of warming
+
+    The rate is the linear trend over each of [RATE_PERIODS][(m).],
+    calculated as in IGCC
+    (see [get_rate][local.cmip7_scenariomip_scm_projections.igcc.get_rate]).
+
+    Parameters
+    ----------
+    assessed_gsat
+        Assessed GSAT for each ensemble member
+
+    Returns
+    -------
+    :
+        Quantiles (rows are scenarios and periods (see [get_rate_period_label][(m).]),
+        columns are [QUANTILES][(m).])
+    """
+    group_levels = [
+        lvl
+        for lvl in GROUP_LEVELS
+        if lvl in assessed_gsat.index.names and lvl != "unit"
+    ]
+    rate = pd.concat(
+        {
+            get_rate_period_label(*period): get_rate(assessed_gsat, *period)
+            for period in RATE_PERIODS
+        },
+        names=["period"],
+    )
+    res = rate.groupby([*group_levels, "period"]).quantile(list(QUANTILES)).unstack()
+    res.columns.name = "quantile"
+    res = pd.concat({"K / decade": res}, names=["unit"])
+
+    return res
+
+
 def summarise_warming(
     run_dirs: Iterable[Path],
     metrics_quantiles_file: Path,
     timeseries_quantiles_file: Path,
     peak_year_quantiles_file: Path,
+    rate_quantiles_file: Path,
 ) -> None:
     """
     Summarise the projected warming of all scenarios
@@ -189,6 +252,9 @@ def summarise_warming(
 
     peak_year_quantiles_file
         File in which to save the quantiles of the year of peak warming
+
+    rate_quantiles_file
+        File in which to save the quantiles of the rate of warming
     """
     assessed_gsat = load_assessed_gsat(run_dirs)
 
@@ -198,3 +264,4 @@ def summarise_warming(
     )
     save_feather(get_timeseries_quantiles(assessed_gsat), timeseries_quantiles_file)
     save_feather(get_peak_year_quantiles(assessed_gsat), peak_year_quantiles_file)
+    save_feather(get_rate_quantiles(assessed_gsat), rate_quantiles_file)

@@ -48,8 +48,9 @@ export MAGICC_PROB_DISTRIBUTION_PATH=/path/to/magicc-ar7-fast-track-drawnset-v0-
 export MAGICC_N_PROCESSES=8
 ```
 
-Everything else (historical emissions, the infilling database
-and the published results we check against)
+Everything else (historical emissions, the infilling database,
+the published results we check against
+and the Indicators of Global Climate Change data)
 is downloaded from Zenodo by the build.
 
 ## Creating the manuscript
@@ -70,6 +71,10 @@ the code they call is in `src/local`.
 
 1. `task_download.py`: download the raw data for each scenario
    (from ssp_submission) and the other inputs (from Zenodo).
+   `task_download_igcc.py`: download the
+   [Indicators of Global Climate Change 2025](https://doi.org/10.5194/essd-18-3889-2026)
+   data ([IGCC-2025a](https://doi.org/10.5281/zenodo.21494229)),
+   which we compare to in the figure of projected warming.
 1. `task_run_magicc.py`: for each scenario, run the entire CMIP7 ScenarioMIP workflow
    with [gcages](https://github.com/openscm/gcages)
    (commit `c0c33d2ac83d502dc423895dc63ec06fff461960`):

@@ -59,6 +59,9 @@ WARMING_TIMESERIES_QUANTILES = SUMMARY_DIR / "warming-timeseries-quantiles.feath
 PEAK_YEAR_QUANTILES = SUMMARY_DIR / "peak-year-quantiles.feather"
 """Quantiles of the year of peak warming"""
 
+WARMING_RATE_QUANTILES = SUMMARY_DIR / "warming-rate-quantiles.feather"
+"""Quantiles of the rate of warming (see `warming.RATE_PERIODS`)"""
+
 # Manuscript sources
 MANUSCRIPT_DIR = REPO_ROOT / "manuscripts" / MANUSCRIPT_NAME
 """Directory which holds the manuscript's source"""

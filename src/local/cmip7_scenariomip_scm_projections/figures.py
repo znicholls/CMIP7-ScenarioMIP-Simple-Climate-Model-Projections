@@ -16,6 +16,13 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 
+from local.cmip7_scenariomip_scm_projections.igcc import (
+    ASSESSED_RATE_BEST,
+    ASSESSED_RATE_PERIOD,
+    ASSESSED_RATE_RANGE,
+    load_human_induced_warming,
+    load_observed_gmst,
+)
 from local.cmip7_scenariomip_scm_projections.scenarios import (
     SCENARIOS,
     Scenario,
@@ -23,6 +30,8 @@ from local.cmip7_scenariomip_scm_projections.scenarios import (
 from local.cmip7_scenariomip_scm_projections.warming import (
     METRICS,
     PEAK,
+    RATE_PERIODS,
+    get_rate_period_label,
 )
 from local.feather_io import load_feather_df
 
@@ -50,6 +59,18 @@ BOX_LAYERS = (
 BOX_WIDTH = 0.7
 """Width of the boxes (scenarios are 1 apart)"""
 
+IGCC_COLOUR = "#7f7f7f"
+"""Colour of the IGCC assessment's box"""
+
+NEAR_TERM_YEARS = (2000, 2050)
+"""First and last year of the near-term timeseries panel"""
+
+RATE_GROUP_GAP = 1.0
+"""Gap between the groups of boxes in the rate panel (scenarios are 1 apart)"""
+
+RATE_IGCC_GAP = 0.3
+"""Extra gap between IGCC's box and the scenarios' boxes for the same period"""
+
 
 def style_axes(ax: Axes) -> None:
     """Apply our (recessive) axis style"""
@@ -69,9 +90,14 @@ def select_scenario(df: pd.DataFrame, scenario: Scenario) -> pd.DataFrame:
     ]
 
 
-def plot_timeseries(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
+def plot_scenario_plumes(
+    ax: Axes,
+    timeseries_quantiles: pd.DataFrame,
+    first_year: int,
+    last_year: int,
+) -> None:
     """
-    Plot the median warming (line) and 5th to 95th percentile (plume)
+    Plot each scenario's median warming (line) and 5th to 95th percentile (plume)
 
     Parameters
     ----------
@@ -80,9 +106,17 @@ def plot_timeseries(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
 
     timeseries_quantiles
         Quantiles of the assessed GSAT timeseries
+
+    first_year
+        First year to plot
+
+    last_year
+        Last year to plot
     """
     for scenario in SCENARIOS:
-        sdf = select_scenario(timeseries_quantiles, scenario)
+        sdf = select_scenario(timeseries_quantiles, scenario).loc[
+            :, first_year:last_year
+        ]
         quantiles = sdf.index.get_level_values("quantile")
         years = sdf.columns.to_numpy()
 
@@ -102,17 +136,81 @@ def plot_timeseries(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
             label=scenario.label,
         )
 
-    ax.set_xlim(1850, 2500)
+    ax.set_xlim(first_year, last_year)
+
+
+def plot_timeseries(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
+    """
+    Plot the median warming (line) and 5th to 95th percentile (plume) to 2500
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot
+
+    timeseries_quantiles
+        Quantiles of the assessed GSAT timeseries
+    """
+    plot_scenario_plumes(ax, timeseries_quantiles, 1850, 2500)
     ax.axhline(0.0, color=INK, linewidth=0.5)
     ax.set_ylabel("Warming relative to 1850–1900 (K)", fontsize=8)  # noqa: RUF001
-    ax.legend(
-        loc="upper left",
-        ncols=len(SCENARIOS),
-        fontsize=8,
-        frameon=False,
-        handlelength=1.5,
-        columnspacing=1.0,
+    style_axes(ax)
+
+
+def plot_near_term(
+    ax: Axes,
+    timeseries_quantiles: pd.DataFrame,
+    observed_gmst: pd.Series,  # type: ignore[type-arg]
+    human_induced_warming: pd.Series,  # type: ignore[type-arg]
+) -> None:
+    """
+    Plot the near-term warming, with IGCC's observed and human-induced warming
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot
+
+    timeseries_quantiles
+        Quantiles of the assessed GSAT timeseries
+
+    observed_gmst
+        IGCC's observed GMST (indexed by year)
+
+    human_induced_warming
+        IGCC's human-induced warming (indexed by year)
+    """
+    first_year, last_year = NEAR_TERM_YEARS
+    plot_scenario_plumes(ax, timeseries_quantiles, first_year, last_year)
+
+    observed = observed_gmst.loc[first_year:last_year]
+    ax.plot(
+        observed.index,
+        observed.to_numpy(),
+        color=INK,
+        linewidth=0.8,
+        marker="o",
+        markersize=2,
+        label="Observed (IGCC)",
     )
+    human_induced = human_induced_warming.loc[first_year:last_year]
+    ax.plot(
+        human_induced.index,
+        human_induced.to_numpy(),
+        color=INK,
+        linewidth=1.5,
+        linestyle=(0, (2, 1)),
+        label="Human-induced (IGCC)",
+    )
+
+    # The plumes cover the full run, so only scale to what is shown
+    in_window = timeseries_quantiles.loc[:, first_year:last_year]
+    lowest = min(in_window.min().min(), observed.min())
+    highest = max(in_window.max().max(), observed.max())
+    padding = 0.05 * (highest - lowest)
+    ax.set_ylim(lowest - padding, highest + padding)
+
+    ax.set_ylabel("Warming relative to\n1850–1900 (K)", fontsize=8)  # noqa: RUF001
     style_axes(ax)
 
 
@@ -205,6 +303,115 @@ def plot_peak_year(ax: Axes, peak_year_quantiles: pd.DataFrame) -> None:
     ax.grid(axis="x", color=GRID, linewidth=0.5)
 
 
+def draw_igcc_rate_box(ax: Axes, position: float) -> None:
+    """
+    Draw IGCC's assessed rate of warming
+
+    IGCC only give a best estimate and range, so this is a single box
+    (and the line is the best estimate).
+    """
+    low, high = ASSESSED_RATE_RANGE
+    across_start = position - BOX_WIDTH / 2
+    ax.add_patch(
+        Rectangle(
+            (across_start, low),
+            BOX_WIDTH,
+            high - low,
+            facecolor=IGCC_COLOUR,
+            alpha=BOX_LAYERS[0][2],
+            edgecolor="none",
+        )
+    )
+    ax.add_patch(
+        Rectangle(
+            (across_start, low),
+            BOX_WIDTH,
+            high - low,
+            facecolor="none",
+            edgecolor=INK,
+            linewidth=0.4,
+        )
+    )
+    ax.plot(
+        [across_start, across_start + BOX_WIDTH],
+        [ASSESSED_RATE_BEST, ASSESSED_RATE_BEST],
+        color=INK,
+        linewidth=1.5,
+        solid_capstyle="butt",
+    )
+    ax.text(
+        position,
+        high,
+        " IGCC",
+        ha="center",
+        va="bottom",
+        # Vertical, so it fits above the (narrow) box
+        rotation=90,
+        fontsize=6.5,
+        color=INK,
+    )
+
+
+def plot_rates(ax: Axes, rate_quantiles: pd.DataFrame) -> None:
+    """
+    Plot the projected rate of warming, with IGCC's assessment
+
+    There is a group of nested boxes (one per scenario)
+    for each of [RATE_PERIODS][(m).].
+    IGCC's assessment (best estimate and likely range) is shown
+    at the start of the group for the period it covers.
+
+    Parameters
+    ----------
+    ax
+        Axes on which to plot
+
+    rate_quantiles
+        Quantiles of the projected rate of warming
+    """
+    tick_positions = []
+    tick_labels = []
+    lowest = min(0.0, ASSESSED_RATE_RANGE[0])
+    # Room for IGCC's label
+    highest = 1.2 * ASSESSED_RATE_RANGE[1]
+    position = 0.0
+    for i_period, period in enumerate(RATE_PERIODS):
+        if i_period > 0:
+            # Separate the groups
+            ax.axvline(position - (1.0 + RATE_GROUP_GAP) / 2, color=GRID, linewidth=0.8)
+
+        group_start = position
+        if period == ASSESSED_RATE_PERIOD:
+            draw_igcc_rate_box(ax, position)
+            position += 1.0 + RATE_IGCC_GAP
+
+        period_quantiles = rate_quantiles.loc[
+            rate_quantiles.index.get_level_values("period")
+            == get_rate_period_label(*period)
+        ]
+        for scenario in SCENARIOS:
+            q = select_scenario(period_quantiles, scenario).squeeze()
+            draw_nested_box(ax, position=position, q=q, colour=scenario.colour)
+            lowest = min(lowest, q[BOX_LAYERS[0][0]])
+            highest = max(highest, q[BOX_LAYERS[0][1]])
+            position += 1.0
+
+        group_end = position - 1.0
+        tick_positions.append((group_start + group_end) / 2)
+        tick_labels.append(f"{period[0]}–{period[1]}")  # noqa: RUF001
+        position = group_end + 1.0 + RATE_GROUP_GAP
+
+    padding = 0.05 * (highest - lowest)
+    ax.set_ylim(lowest - padding, highest + padding)
+    ax.axhline(0.0, color=INK, linewidth=0.5)
+
+    ax.set_xlim(-0.6, group_end + 0.6)
+    ax.set_xticks(tick_positions, tick_labels)
+    ax.tick_params(axis="x", labelsize=7, length=0)
+    ax.set_ylabel("Rate of warming (K / decade)", fontsize=8)
+    style_axes(ax)
+
+
 SEPARATE_SCENARIO_LABELS = ("M", "H")
 """Scenarios shown in their own box panels (their warming is on a different scale)"""
 
@@ -258,19 +465,41 @@ def plot_boxes(
     style_axes(ax)
 
 
-def generate_warming_figure(
+def label_panel(ax: Axes, label: str) -> None:
+    """Put the panel's letter above its top left corner"""
+    ax.text(
+        0.0,
+        1.02,
+        f"{label})",
+        transform=ax.transAxes,
+        fontsize=10,
+        fontweight="bold",
+        va="bottom",
+        ha="right",
+        color=INK,
+    )
+
+
+def generate_warming_figure(  # noqa: PLR0913
     out_file: Path,
     metrics_quantiles_file: Path,
     timeseries_quantiles_file: Path,
     peak_year_quantiles_file: Path,
+    rate_quantiles_file: Path,
+    igcc_dir: Path,
 ) -> Path:
     """
     Generate the figure of projected warming
 
-    Panel a shows the median and 5th to 95th percentile warming over time,
-    panel b nested boxes of the year of peak warming (on the same time axis),
-    panels c to e nested boxes of peak warming, warming in 2100 and in 2500.
-    In each of c to e, the scenarios in [SEPARATE_SCENARIO_LABELS][(m).]
+    Panel a shows the median and 5th to 95th percentile warming
+    over [NEAR_TERM_YEARS][(m).], with IGCC's observed and human-induced warming,
+    panel b the rate of warming
+    (nested boxes for each scenario for each period in `warming.RATE_PERIODS`,
+    with IGCC's assessment for its latest period),
+    panel c the median and 5th to 95th percentile warming to 2500,
+    panel d nested boxes of the year of peak warming (on the same time axis),
+    panels e to g nested boxes of peak warming, warming in 2100 and in 2500.
+    In each of e to g, the scenarios in [SEPARATE_SCENARIO_LABELS][(m).]
     are shown in their own panel, next to the others.
     Every box panel has its own y-axis.
 
@@ -288,6 +517,12 @@ def generate_warming_figure(
     peak_year_quantiles_file
         File which holds the quantiles of the year of peak warming
 
+    rate_quantiles_file
+        File which holds the quantiles of the rate of warming
+
+    igcc_dir
+        Directory which holds the IGCC data
+
     Returns
     -------
     :
@@ -296,25 +531,54 @@ def generate_warming_figure(
     metrics_quantiles = load_feather_df(metrics_quantiles_file)
     timeseries_quantiles = load_feather_df(timeseries_quantiles_file)
     peak_year_quantiles = load_feather_df(peak_year_quantiles_file)
+    rate_quantiles = load_feather_df(rate_quantiles_file)
 
     main_scenarios = [s for s in SCENARIOS if s.label not in SEPARATE_SCENARIO_LABELS]
     separate_scenarios = [s for s in SCENARIOS if s.label in SEPARATE_SCENARIO_LABELS]
 
-    fig = plt.figure(figsize=(7.0, 8.0), layout="constrained")
-    box_labels = ["c", "d", "e"]
+    fig = plt.figure(figsize=(7.0, 9.7), layout="constrained")
+    # The top row has its own layout (it doesn't line up with the box panels)
+    top, bottom = fig.subfigures(2, 1, height_ratios=[1.4, 2.8])
+
+    top_axd = top.subplot_mosaic([["a", "b"]], width_ratios=[1, 1.4])
+    plot_near_term(
+        top_axd["a"],
+        timeseries_quantiles,
+        observed_gmst=load_observed_gmst(igcc_dir),
+        human_induced_warming=load_human_induced_warming(igcc_dir),
+    )
+    plot_rates(top_axd["b"], rate_quantiles)
+
+    # One legend for the whole figure
+    # (the scenarios are only identified by colour in the box panels)
+    handles, labels = top_axd["a"].get_legend_handles_labels()
+    top.legend(
+        handles,
+        labels,
+        loc="outside upper center",
+        ncols=len(handles),
+        fontsize=7.5,
+        frameon=False,
+        handlelength=1.8,
+        columnspacing=1.0,
+    )
+
+    box_labels = ["e", "f", "g"]
     box_row = [k for label in box_labels for k in (label, f"{label}-separate")]
-    axd = fig.subplot_mosaic(
-        [["a"] * len(box_row), ["b"] * len(box_row), box_row],
+    axd = bottom.subplot_mosaic(
+        [["c"] * len(box_row), ["d"] * len(box_row), box_row],
         height_ratios=[1.2, 0.6, 1],
         width_ratios=[len(main_scenarios), len(separate_scenarios) + 0.6]
         * len(box_labels),
     )
-    plot_timeseries(axd["a"], timeseries_quantiles)
+    axd.update(top_axd)
+
+    plot_timeseries(axd["c"], timeseries_quantiles)
 
     # Peak timing on the same time axis as the timeseries
-    axd["b"].sharex(axd["a"])
-    plot_peak_year(axd["b"], peak_year_quantiles)
-    axd["a"].tick_params(labelbottom=False)
+    axd["d"].sharex(axd["c"])
+    plot_peak_year(axd["d"], peak_year_quantiles)
+    axd["c"].tick_params(labelbottom=False)
 
     for label, metric in zip(box_labels, METRICS):
         main_ax = axd[label]
@@ -330,20 +594,10 @@ def generate_warming_figure(
             axd[f"{label}-separate"], metrics_quantiles, metric, separate_scenarios
         )
 
-    axd["c"].set_ylabel("Warming (K)", fontsize=8)
+    axd[box_labels[0]].set_ylabel("Warming (K)", fontsize=8)
 
-    for label in ["a", "b"]:
-        axd[label].text(
-            0.0,
-            1.02,
-            f"{label})",
-            transform=axd[label].transAxes,
-            fontsize=10,
-            fontweight="bold",
-            va="bottom",
-            ha="right",
-            color=INK,
-        )
+    for label in ["a", "b", "c", "d"]:
+        label_panel(axd[label], label)
 
     out_file.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_file)
