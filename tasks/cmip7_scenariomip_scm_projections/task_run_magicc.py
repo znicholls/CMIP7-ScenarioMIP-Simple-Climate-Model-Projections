@@ -9,7 +9,9 @@ editing a cheap task would re-run MAGICC too.
 Each run also checks that it reproduces the published results
 (https://zenodo.org/records/19825038) and fails if it doesn't.
 
-MAGICC is found via environment variables, see the README.
+MAGICC and its probabilistic distribution are downloaded
+(see `task_download_magicc.py`),
+unless environment variables say where they are (see the README).
 """
 
 from pathlib import Path
@@ -20,9 +22,9 @@ from pytask import Product, task
 import local.cmip7_scenariomip_scm_projections.magicc_runs
 import local.cmip7_scenariomip_scm_projections.raw_data
 from local.cmip7_scenariomip_scm_projections.config import RUNS_DIR, get_raw_file
+from local.cmip7_scenariomip_scm_projections.magicc import get_magicc_dependencies
 from local.cmip7_scenariomip_scm_projections.magicc_runs import (
     ZENODO_FILE_PATHS,
-    get_magicc_dependencies,
     get_run_dir,
     get_run_output_files,
     run_scenario,

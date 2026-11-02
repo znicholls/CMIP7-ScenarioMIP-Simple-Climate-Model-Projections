@@ -36,7 +36,10 @@ from local.cmip7_scenariomip_scm_projections.warming import (
 from local.feather_io import load_feather_df
 
 INK = "#1f1f1f"
-"""Colour of text, medians and box outlines"""
+"""Colour of text and box outlines"""
+
+MEDIAN_COLOUR = "white"
+"""Colour of the median (best estimate) line in the boxes"""
 
 GRID = "#d9d9d9"
 """Colour of grid lines"""
@@ -62,8 +65,11 @@ BOX_WIDTH = 0.7
 IGCC_COLOUR = "#7f7f7f"
 """Colour of the IGCC assessment's box"""
 
-NEAR_TERM_YEARS = (2000, 2050)
-"""First and last year of the near-term timeseries panel"""
+NEAR_TERM_YEARS = (2000, 2100)
+"""First and last year of the near-term timeseries panel (with IGCC's data)"""
+
+LONG_TERM_YEARS = (2100, 2500)
+"""First and last year of the long-term timeseries panel"""
 
 RATE_GROUP_GAP = 1.0
 """Gap between the groups of boxes in the rate panel (scenarios are 1 apart)"""
@@ -139,9 +145,11 @@ def plot_scenario_plumes(
     ax.set_xlim(first_year, last_year)
 
 
-def plot_timeseries(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
+def plot_long_term(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
     """
-    Plot the median warming (line) and 5th to 95th percentile (plume) to 2500
+    Plot the long-term median warming (line) and 5th to 95th percentile (plume)
+
+    Over [LONG_TERM_YEARS][(m).], on its own y-axis.
 
     Parameters
     ----------
@@ -151,9 +159,8 @@ def plot_timeseries(ax: Axes, timeseries_quantiles: pd.DataFrame) -> None:
     timeseries_quantiles
         Quantiles of the assessed GSAT timeseries
     """
-    plot_scenario_plumes(ax, timeseries_quantiles, 1850, 2500)
+    plot_scenario_plumes(ax, timeseries_quantiles, *LONG_TERM_YEARS)
     ax.axhline(0.0, color=INK, linewidth=0.5)
-    ax.set_ylabel("Warming relative to 1850–1900 (K)", fontsize=8)  # noqa: RUF001
     style_axes(ax)
 
 
@@ -213,6 +220,19 @@ def plot_near_term(
     ax.set_ylabel("Warming relative to\n1850–1900 (K)", fontsize=8)  # noqa: RUF001
     style_axes(ax)
 
+    # IGCC's data is only in this panel, so its legend goes here
+    # (the scenarios' legend is for the whole figure)
+    handles, labels = ax.get_legend_handles_labels()
+    igcc = [(h, lab) for h, lab in zip(handles, labels) if "IGCC" in lab]
+    ax.legend(
+        [h for h, _ in igcc],
+        [lab for _, lab in igcc],
+        loc="upper left",
+        fontsize=7,
+        frameon=False,
+        handlelength=2.2,
+    )
+
 
 def draw_nested_box(
     ax: Axes,
@@ -270,17 +290,20 @@ def draw_nested_box(
     median = [q[0.5], q[0.5]]
     ax.plot(
         *((median, across) if horizontal else (across, median)),
-        color=INK,
+        color=MEDIAN_COLOUR,
         linewidth=1.5,
         solid_capstyle="butt",
     )
 
 
-def plot_peak_year(ax: Axes, peak_year_quantiles: pd.DataFrame) -> None:
+def plot_peak_year(
+    ax: Axes, peak_year_quantiles: pd.DataFrame, *, show_labels: bool = True
+) -> None:
     """
     Plot nested boxes of the year of peak warming for each scenario
 
-    The boxes run left to right, on the same time axis as the timeseries.
+    The boxes run left to right, on the same time axis as the timeseries
+    (share the x-axis with the timeseries panel before calling this).
 
     Parameters
     ----------
@@ -289,6 +312,9 @@ def plot_peak_year(ax: Axes, peak_year_quantiles: pd.DataFrame) -> None:
 
     peak_year_quantiles
         Quantiles of the year of peak warming
+
+    show_labels
+        Should the scenario labels and y-axis label be shown?
     """
     for i, scenario in enumerate(SCENARIOS):
         q = select_scenario(peak_year_quantiles, scenario).squeeze()
@@ -297,7 +323,11 @@ def plot_peak_year(ax: Axes, peak_year_quantiles: pd.DataFrame) -> None:
     ax.set_ylim(len(SCENARIOS) - 0.4, -0.6)
     ax.set_yticks(range(len(SCENARIOS)), [s.label for s in SCENARIOS])
     ax.set_xlabel("Year", fontsize=8)
-    ax.set_ylabel("Peak year", fontsize=8)
+    if show_labels:
+        ax.set_ylabel("Peak year", fontsize=8)
+    else:
+        ax.tick_params(axis="y", labelleft=False)
+
     style_axes(ax)
     ax.grid(axis="y", visible=False)
     ax.grid(axis="x", color=GRID, linewidth=0.5)
@@ -335,7 +365,7 @@ def draw_igcc_rate_box(ax: Axes, position: float) -> None:
     ax.plot(
         [across_start, across_start + BOX_WIDTH],
         [ASSESSED_RATE_BEST, ASSESSED_RATE_BEST],
-        color=INK,
+        color=MEDIAN_COLOUR,
         linewidth=1.5,
         solid_capstyle="butt",
     )
@@ -491,15 +521,16 @@ def generate_warming_figure(  # noqa: PLR0913
     """
     Generate the figure of projected warming
 
-    Panel a shows the median and 5th to 95th percentile warming
-    over [NEAR_TERM_YEARS][(m).], with IGCC's observed and human-induced warming,
-    panel b the rate of warming
+    Panels a and b show the median and 5th to 95th percentile warming
+    over [NEAR_TERM_YEARS][(m).] (with IGCC's observed and human-induced warming)
+    and [LONG_TERM_YEARS][(m).], each on its own y-axis.
+    Panels c and d show nested boxes of the year of peak warming
+    on the same time axes as a and b.
+    Panel e shows the rate of warming
     (nested boxes for each scenario for each period in `warming.RATE_PERIODS`,
-    with IGCC's assessment for its latest period),
-    panel c the median and 5th to 95th percentile warming to 2500,
-    panel d nested boxes of the year of peak warming (on the same time axis),
-    panels e to g nested boxes of peak warming, warming in 2100 and in 2500.
-    In each of e to g, the scenarios in [SEPARATE_SCENARIO_LABELS][(m).]
+    with IGCC's assessment for its latest period).
+    Panels f to h show nested boxes of peak warming, warming in 2100 and in 2500.
+    In each of f to h, the scenarios in [SEPARATE_SCENARIO_LABELS][(m).]
     are shown in their own panel, next to the others.
     Every box panel has its own y-axis.
 
@@ -537,48 +568,56 @@ def generate_warming_figure(  # noqa: PLR0913
     separate_scenarios = [s for s in SCENARIOS if s.label in SEPARATE_SCENARIO_LABELS]
 
     fig = plt.figure(figsize=(7.0, 9.7), layout="constrained")
-    # The top row has its own layout (it doesn't line up with the box panels)
-    top, bottom = fig.subfigures(2, 1, height_ratios=[1.4, 2.8])
+    # Each row has its own layout (their columns don't line up)
+    time_fig, rate_fig, box_fig = fig.subfigures(3, 1, height_ratios=[2.0, 1.1, 1.0])
 
-    top_axd = top.subplot_mosaic([["a", "b"]], width_ratios=[1, 1.4])
+    time_axd = time_fig.subplot_mosaic(
+        [["a", "b"], ["c", "d"]], height_ratios=[1.4, 0.75]
+    )
     plot_near_term(
-        top_axd["a"],
+        time_axd["a"],
         timeseries_quantiles,
         observed_gmst=load_observed_gmst(igcc_dir),
         human_induced_warming=load_human_induced_warming(igcc_dir),
     )
-    plot_rates(top_axd["b"], rate_quantiles)
+    plot_long_term(time_axd["b"], timeseries_quantiles)
 
-    # One legend for the whole figure
+    # Peak timing on the same time axes as the timeseries
+    for timeseries_label, peak_label in (("a", "c"), ("b", "d")):
+        time_axd[peak_label].sharex(time_axd[timeseries_label])
+        time_axd[timeseries_label].tick_params(labelbottom=False)
+
+    plot_peak_year(time_axd["c"], peak_year_quantiles)
+    plot_peak_year(time_axd["d"], peak_year_quantiles, show_labels=False)
+
+    # One legend of the scenarios for the whole figure
     # (the scenarios are only identified by colour in the box panels)
-    handles, labels = top_axd["a"].get_legend_handles_labels()
-    top.legend(
+    handles, labels = time_axd["b"].get_legend_handles_labels()
+    time_fig.legend(
         handles,
         labels,
         loc="outside upper center",
         ncols=len(handles),
         fontsize=7.5,
+        title="Scenario",
+        title_fontsize=8,
         frameon=False,
         handlelength=1.8,
         columnspacing=1.0,
     )
 
-    box_labels = ["e", "f", "g"]
+    rate_ax = rate_fig.subplots()
+    plot_rates(rate_ax, rate_quantiles)
+
+    box_labels = ["f", "g", "h"]
     box_row = [k for label in box_labels for k in (label, f"{label}-separate")]
-    axd = bottom.subplot_mosaic(
-        [["c"] * len(box_row), ["d"] * len(box_row), box_row],
-        height_ratios=[1.2, 0.6, 1],
+    axd = box_fig.subplot_mosaic(
+        [box_row],
         width_ratios=[len(main_scenarios), len(separate_scenarios) + 0.6]
         * len(box_labels),
     )
-    axd.update(top_axd)
-
-    plot_timeseries(axd["c"], timeseries_quantiles)
-
-    # Peak timing on the same time axis as the timeseries
-    axd["d"].sharex(axd["c"])
-    plot_peak_year(axd["d"], peak_year_quantiles)
-    axd["c"].tick_params(labelbottom=False)
+    axd.update(time_axd)
+    axd["e"] = rate_ax
 
     for label, metric in zip(box_labels, METRICS):
         main_ax = axd[label]
@@ -596,7 +635,7 @@ def generate_warming_figure(  # noqa: PLR0913
 
     axd[box_labels[0]].set_ylabel("Warming (K)", fontsize=8)
 
-    for label in ["a", "b", "c", "d"]:
+    for label in ["a", "b", "c", "d", "e"]:
         label_panel(axd[label], label)
 
     out_file.parent.mkdir(parents=True, exist_ok=True)

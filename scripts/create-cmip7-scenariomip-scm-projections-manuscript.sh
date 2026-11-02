@@ -13,13 +13,29 @@ set -euo pipefail
 #
 # - an IIASA login with access to the ssp_submission database
 #   (`uv run ixmp4 login <your-username>`), to download the raw scenario data
-# - MAGICC v7.6.0a3 and the CMIP7 ScenarioMIP probabilistic distribution,
-#   given by environment variables:
+# - on anything other than Linux (x86-64), a MAGICC v7.6.0a3 binary.
+#   The build downloads MAGICC v7.6.0a3 and the CMIP7 ScenarioMIP
+#   probabilistic distribution, but MAGICC's bundle only has a Linux binary.
+#   Elsewhere, build MAGICC from source
+#   (https://gitlab.com/magicc/magicc/-/commits/v7.6.0a3)
+#   and say where the binary is
+#   (it needs MAGICC's `run` directory at `../run` relative to itself):
 #
 #   ```sh
 #   export MAGICC_EXECUTABLE_7=/path/to/magicc-v7.6.0a3/bin/magicc
+#   ```
+#
+#   If `MAGICC_EXECUTABLE_7` isn't set
+#   and `magicc/magicc-v7.6.0a3/bin/magicc-darwin-arm64` exists
+#   (Zeb's binary for Apple silicon, git ignores `magicc/`),
+#   this script uses that.
+#
+#   Optional environment variables:
+#
+#   ```sh
+#   # Use a different probabilistic distribution file than the downloaded one
 #   export MAGICC_PROB_DISTRIBUTION_PATH=/path/to/magicc-ar7-fast-track-drawnset-v0-3-0.json
-#   # Optional, defaults to the number of CPUs
+#   # Number of processes to use, defaults to the number of CPUs
 #   export MAGICC_N_PROCESSES=8
 #   ```
 #
@@ -72,6 +88,14 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
 cd "${repo_root}"
+
+# Use the binary in `magicc/` (see above), unless MAGICC_EXECUTABLE_7 is already set
+custom_magicc="${repo_root}/magicc/magicc-v7.6.0a3/bin/magicc-darwin-arm64"
+if [[ -z "${MAGICC_EXECUTABLE_7:-}" && -f "${custom_magicc}" ]]; then
+    export MAGICC_EXECUTABLE_7="${custom_magicc}"
+fi
+echo "Using MAGICC_EXECUTABLE_7=${MAGICC_EXECUTABLE_7:-<not set, the downloaded MAGICC is used>}"
+echo "Using MAGICC_PROB_DISTRIBUTION_PATH=${MAGICC_PROB_DISTRIBUTION_PATH:-<not set, the downloaded distribution is used>}"
 
 # Careful: a `-k` which matches no task deselects everything
 # and pytask still reports success, so check the task name.

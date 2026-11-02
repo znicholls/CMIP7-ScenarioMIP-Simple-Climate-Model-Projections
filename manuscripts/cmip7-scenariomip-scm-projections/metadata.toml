@@ -1,5 +1,5 @@
 [title_info]
-title = "Simple climate model projections of the CMIP7 ScenarioMIP scenarios"
+title = "Probabilistic simple climate model projections in support of ScenarioMIP scenario development"
 # IOP article type, e.g. Paper, Letter, Topical Review
 article_type = "Paper"
 keywords = ["CMIP7", "ScenarioMIP", "simple climate models", "MAGICC", "climate projections"]

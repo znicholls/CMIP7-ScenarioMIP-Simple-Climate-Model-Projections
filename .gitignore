@@ -11,6 +11,9 @@
 /figures/
 /tables/
 
+# MAGICC (copied in by hand, see the README)
+/magicc/
+
 # Data (downloaded or produced by the build)
 /data/
 
@@ -22,6 +25,7 @@
 # (they record what was built on this machine, so mean nothing anywhere else)
 .pytask/
 pytask.lock
+pytask.lock.journal
 
 # Notebooks (track as .py via jupytext instead)
 *.ipynb

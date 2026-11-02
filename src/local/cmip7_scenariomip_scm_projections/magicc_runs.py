@@ -48,21 +48,14 @@ from gcages.workflows.cmip7_scenariomip.inputs import (
 from gcages.workflows.cmip7_scenariomip.markers import PUBLISHED_EMISSIONS_FILE
 from loguru import logger
 
+from local.cmip7_scenariomip_scm_projections.magicc import (
+    get_magicc_executable,
+    get_prob_distribution_path,
+)
 from local.cmip7_scenariomip_scm_projections.raw_data import load_raw_data
 from local.cmip7_scenariomip_scm_projections.scenarios import Scenario
 from local.feather_io import save_feather
 from local.paths import DATA_RAW_DIR
-
-MAGICC_EXECUTABLE_ENV_VAR = "MAGICC_EXECUTABLE_7"
-"""Environment variable which gives the path to the MAGICC v7.6.0a3 executable"""
-
-MAGICC_PROB_DISTRIBUTION_ENV_VAR = "MAGICC_PROB_DISTRIBUTION_PATH"
-"""
-Environment variable which gives the path to MAGICC's probabilistic distribution
-
-This should be the CMIP7 ScenarioMIP distribution
-(`magicc-ar7-fast-track-drawnset-v0-3-0.json`).
-"""
 
 N_PROCESSES_ENV_VAR = "MAGICC_N_PROCESSES"
 """
@@ -194,6 +187,8 @@ def get_magicc_paths() -> tuple[Path, Path]:
     """
     Get the paths to MAGICC and its probabilistic distribution
 
+    See `local.cmip7_scenariomip_scm_projections.magicc`.
+
     Returns
     -------
     :
@@ -201,48 +196,11 @@ def get_magicc_paths() -> tuple[Path, Path]:
 
     Raises
     ------
-    KeyError
-        The environment variables which set the paths are not set
+    MAGICCNotAvailableError
+        There is no MAGICC binary for this platform
+        and `MAGICC_EXECUTABLE_7` isn't set
     """
-    missing = [
-        v
-        for v in (MAGICC_EXECUTABLE_ENV_VAR, MAGICC_PROB_DISTRIBUTION_ENV_VAR)
-        if not os.environ.get(v)
-    ]
-    if missing:
-        msg = (
-            f"Please set the environment variable(s) {missing}. "
-            f"{MAGICC_EXECUTABLE_ENV_VAR} should point to "
-            "a MAGICC v7.6.0a3 executable, "
-            f"{MAGICC_PROB_DISTRIBUTION_ENV_VAR} to "
-            "`magicc-ar7-fast-track-drawnset-v0-3-0.json`. "
-            "See the README."
-        )
-        raise KeyError(msg)
-
-    return (
-        Path(os.environ[MAGICC_EXECUTABLE_ENV_VAR]),
-        Path(os.environ[MAGICC_PROB_DISTRIBUTION_ENV_VAR]),
-    )
-
-
-def get_magicc_dependencies() -> list[Path]:
-    """
-    Get the MAGICC files the runs depend on, if they are set
-
-    Used so that the runs are re-done if MAGICC or its distribution changes.
-    If the environment variables aren't set, this is empty
-    (and the runs fail with a clear message when they start).
-
-    Returns
-    -------
-    :
-        MAGICC executable and probabilistic distribution (if set)
-    """
-    try:
-        return list(get_magicc_paths())
-    except KeyError:
-        return []
+    return get_magicc_executable(), get_prob_distribution_path()
 
 
 def get_n_processes() -> int:

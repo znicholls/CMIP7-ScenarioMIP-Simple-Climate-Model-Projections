@@ -1206,6 +1206,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "openscm-units" },
+    { name = "openscm-zenodo" },
     { name = "pandas" },
     { name = "pandas-openscm" },
     { name = "pint" },
@@ -1230,6 +1231,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.9.4" },
     { name = "numpy", specifier = "==2.2.6" },
     { name = "openscm-units", specifier = ">=0.6.3" },
+    { name = "openscm-zenodo", git = "https://github.com/openscm/OpenSCM-zenodo?rev=c954efb46737645ca072bfb76d21a3cf7545a411" },
     { name = "pandas", specifier = "==2.3.1" },
     { name = "pandas-openscm", specifier = "==0.9.1" },
     { name = "pint", specifier = "==0.24.4" },
@@ -1608,6 +1610,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/64/94/5adeb33bad2b6529f6535a29c95b62b39aacaa8164661da6d85871145df0/openscm_units-0.6.3.tar.gz", hash = "sha256:36f4e62b7622498df82895fbb89a63e19e2e686a74ad28e0679dd8f46d3c59b9", size = 19514, upload-time = "2024-10-17T11:13:10.323Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/9f/f48e406b4f92741f50350abeb054ed960bb2b1265bd4d21c3eb4906600c9/openscm_units-0.6.3-py3-none-any.whl", hash = "sha256:3837e2d6fe2f641e63c731787fcaad8e6e3baabb62d673f2903bfcc863e8fce8", size = 14308, upload-time = "2024-10-17T11:13:08.839Z" },
+]
+
+[[package]]
+name = "openscm-zenodo"
+version = "0.5.1a1"
+source = { git = "https://github.com/openscm/OpenSCM-zenodo?rev=c954efb46737645ca072bfb76d21a3cf7545a411#c954efb46737645ca072bfb76d21a3cf7545a411" }
+dependencies = [
+    { name = "attrs" },
+    { name = "loguru" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "tenacity" },
+    { name = "tqdm" },
+    { name = "typer" },
+    { name = "urllib3" },
 ]
 
 [[package]]
@@ -2643,6 +2660,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
+]
+
+[[package]]
+name = "tenacity"
+version = "9.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/9e/497c1c8ebe5a5b5d1d4a7511aea22c0bb1a97e3170d98abdef0e1b34265a/tenacity-9.2.1.tar.gz", hash = "sha256:a606b5c808d0cded4a359d5b9932d867ff2a6a6b64d37350260fd01bbdf83839", size = 58261, upload-time = "2026-10-07T12:13:01.633Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d6/26/1ff2b0721ac66a3ec5b1402b333110b352ab0a8724052ac279a7b82d40c4/tenacity-9.2.1-py3-none-any.whl", hash = "sha256:9e56f17539296baab7beabb08b92f6ee3d7be92d8be72d763360677c2ad6580e", size = 32310, upload-time = "2026-10-07T12:13:00.102Z" },
 ]
 
 [[package]]

@@ -69,7 +69,7 @@ def restore_mixed_index_levels(
     for name, types in converted.items():
         df.index = df.index.set_levels(
             df.index.levels[df.index.names.index(name)].map(
-                lambda v, types=types: (NON_STR_TYPES[types[v]](v) if v in types else v)
+                lambda v, types=types: NON_STR_TYPES[types[v]](v) if v in types else v
             ),
             level=name,
             verify_integrity=False,

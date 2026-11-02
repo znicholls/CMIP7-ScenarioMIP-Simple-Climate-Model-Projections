@@ -33,6 +33,7 @@ dependencies = [
     "pre-commit>=3.3.1",
     "jupyterlab>=4.0.0",
     "jupytext>=1.15.2",
+    "openscm-zenodo",
 ]
 name = "local"
 version = "0.1.0"
@@ -41,6 +42,7 @@ readme = "README.md"
 
 [tool.uv.sources]
 gcages = { git = "https://github.com/openscm/gcages", rev = "c0c33d2ac83d502dc423895dc63ec06fff461960" }
+openscm-zenodo = { git = "https://github.com/openscm/OpenSCM-zenodo", rev = "c954efb46737645ca072bfb76d21a3cf7545a411" }
 
 [build-system]
 requires = ["uv_build>=0.8.7,<0.13.0"]

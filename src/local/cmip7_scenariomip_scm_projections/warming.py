@@ -40,13 +40,18 @@ TIMESERIES_QUANTILES = (0.05, 0.5, 0.95)
 TIMESERIES_FIRST_YEAR = 1850
 """First year of the timeseries we report"""
 
-RATE_PERIODS = (ASSESSED_RATE_PERIOD, (2025, 2034), (2035, 2044), (2045, 2054))
+RATE_PERIODS = (
+    ASSESSED_RATE_PERIOD,
+    (2026, 2035),
+    (2031, 2040),
+    (2036, 2045),
+    (2041, 2050),
+)
 """
 First and last year of each period over which we report the rate of warming
 
 IGCC's latest period ([ASSESSED_RATE_PERIOD][(m).]), to compare with their assessment,
-then ten-year periods which IGCC would label by their midpoints
-(2030, 2040 and 2050).
+then overlapping ten-year periods, starting every five years, out to 2050.
 """
 
 for _first, _last in RATE_PERIODS:

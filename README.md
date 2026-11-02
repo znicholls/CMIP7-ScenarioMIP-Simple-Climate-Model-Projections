@@ -36,15 +36,34 @@ uv run ixmp4 login <your-username>
 The downloaded data is checked against the checksums recorded in gcages,
 so we know it is exactly the data used in CMIP7 ScenarioMIP.
 
-**MAGICC.**
-You need MAGICC v7.6.0a3 and the CMIP7 ScenarioMIP probabilistic distribution
-(`magicc-ar7-fast-track-drawnset-v0-3-0.json`).
-Tell the build where they are with environment variables:
+**MAGICC (only if you're not on Linux).**
+The build downloads MAGICC v7.6.0a3
+(from [the GitLab job which built it](https://gitlab.com/magicc/magicc/-/jobs/8636354904/artifacts/browse))
+and the CMIP7 ScenarioMIP probabilistic distribution
+(`magicc-ar7-fast-track-drawnset-v0-3-0.json`,
+from [Zenodo](https://doi.org/10.5281/zenodo.14678474)).
+MAGICC's bundle only has a binary for Linux (x86-64).
+On anything else, the build fails and tells you to
+[build MAGICC from source](https://gitlab.com/magicc/magicc/-/commits/v7.6.0a3)
+and say where your binary is:
 
 ```sh
 export MAGICC_EXECUTABLE_7=/path/to/magicc-v7.6.0a3/bin/magicc
+```
+
+The binary needs MAGICC's `run` directory at `../run` relative to itself
+(you can copy it from the downloaded bundle in `data/raw/magicc/magicc-v7.6.0a3/run`).
+If `MAGICC_EXECUTABLE_7` isn't set
+and `magicc/magicc-v7.6.0a3/bin/magicc-darwin-arm64` exists
+(the `magicc/` directory is ignored by git),
+`scripts/create-cmip7-scenariomip-scm-projections-manuscript.sh` uses that.
+
+Optional environment variables:
+
+```sh
+# Use a different probabilistic distribution file than the downloaded one
 export MAGICC_PROB_DISTRIBUTION_PATH=/path/to/magicc-ar7-fast-track-drawnset-v0-3-0.json
-# Optional: number of processes to use (defaults to the number of CPUs)
+# Number of processes to use (defaults to the number of CPUs)
 export MAGICC_N_PROCESSES=8
 ```
 
@@ -63,6 +82,32 @@ bash scripts/create-cmip7-scenariomip-scm-projections-manuscript.sh
 The PDF is written to `compiled-manuscripts/cmip7-scenariomip-scm-projections.pdf`.
 See the script for how to run only part of the build, force re-runs etc.
 
+## Uploading to Zenodo
+
+`scripts/upload-to-zenodo.py` uploads the compiled manuscript,
+the source of this repository (via `git archive`)
+and the assessed GSAT of every MAGICC ensemble member to 2500 (gzipped CSV)
+to the manuscript's Zenodo record (a draft),
+and sets the record's metadata,
+all with [openscm-zenodo](https://github.com/openscm/OpenSCM-zenodo).
+It never publishes the record.
+It also doesn't add the record to the
+[ScenarioMIP-CMIP7 community](https://zenodo.org/communities/scenariomip-cmip7):
+for now, publish the record first,
+then request its inclusion with openscm-zenodo's
+`ZenodoClient.request_community_inclusion` (see the script's docstring).
+Before writing the CSV, it checks that the data reproduces
+the published climate assessment up to 2100.
+
+You need a Zenodo token in `ZENODO_TOKEN` (or in `.env`, see `.env.sample`).
+
+```sh
+# Build, check and show what would be uploaded
+uv run python scripts/upload-to-zenodo.py --dry-run
+# Build, check and upload
+uv run python scripts/upload-to-zenodo.py
+```
+
 ## How the build works
 
 The build is driven by [pytask](https://pytask-dev.readthedocs.io/).
@@ -71,6 +116,7 @@ the code they call is in `src/local`.
 
 1. `task_download.py`: download the raw data for each scenario
    (from ssp_submission) and the other inputs (from Zenodo).
+   `task_download_magicc.py`: download MAGICC and its probabilistic distribution.
    `task_download_igcc.py`: download the
    [Indicators of Global Climate Change 2025](https://doi.org/10.5194/essd-18-3889-2026)
    data ([IGCC-2025a](https://doi.org/10.5281/zenodo.21494229)),
