@@ -1,0 +1,79 @@
+% Clean version of IOP's template (iopjournal-template.tex in this folder,
+% from https://publishingsupport.iopscience.iop.org/wp-content/uploads/2025/07/ioplatextemplate.zip).
+% `src/local/iop_latex.py` fills it in:
+% `TEXT` placeholders are replaced from the manuscript's metadata
+% and the manuscript's files are inserted after the `@...-start@` tags.
+%
+% Options
+% 	[anonymous]	Provides output without author names, affiliations or acknowledgments to facilitate double-anonymous peer-review
+\documentclass{iopjournal}
+
+% IOP doesn't prescribe a reference style, so we use author-year
+\usepackage[round]{natbib}
+\usepackage{booktabs}
+
+\begin{document}
+
+\articletype{TEXT} %	 e.g. Paper, Letter, Topical Review...
+
+\title{TEXT}
+
+% \author{Author Name$^1$\orcid{0000-0000-0000-0000}, Author Name$^2$ and Author Name$^{1,*}$}
+% @author-start@
+
+% \affil{$^1$Department, Institution, City, Country}
+% \affil{$^*$Author to whom any correspondence should be addressed.}
+% @affiliation-start@
+
+\email{TEXT}
+
+\keywords{TEXT}
+
+\begin{abstract}
+% @abstract-start@
+\end{abstract}
+
+\section{Introduction}
+\label{sec:introduction}
+% @introduction-start@
+
+% Sections like this
+% \section{HEADING}
+% TEXT
+%
+% \subsection{HEADING}
+% TEXT
+% @body-start@
+
+\section{Conclusions}
+\label{sec:conclusions}
+% @conclusions-start@
+
+%
+% Each of the commands below will create an unnumbered section with the appropriate heading.
+% All sections except suppdata will be removed if the [anonymous] option is used.
+% See iopjournal-guidelines.pdf for more information.
+%
+\ack{TEXT}
+
+% This section is a list of funder names and grant numbers
+\funding{TEXT}
+
+% List author names and the contributions made to the article,
+% using terms from the NISO Contributor Roles Taxonomy (CRediT) https://credit.niso.org
+\roles{TEXT}
+
+% For more information on IOP Publishing's research data policy see: https://publishingsupport.iopscience.iop.org/questions/research-data/
+\data{TEXT}
+
+% \suppdata{TEXT}
+
+% Appendices like this if needed
+% \appendix
+% \section{}    %% Appendix A
+% @appendix-start@
+
+\bibliographystyle{plainnat}
+\bibliography{TEXT}
+
+\end{document}

@@ -1,0 +1,30 @@
+[title_info]
+title = "Probabilistic simple climate model projections in support of ScenarioMIP scenario development"
+# IOP article type, e.g. Paper, Letter, Topical Review
+article_type = "Paper"
+keywords = ["CMIP7", "ScenarioMIP", "simple climate models", "MAGICC", "climate projections"]
+
+# Each author's `contributions` are CRediT roles (https://credit.niso.org),
+# written as tags. The tags, and the text each is written as,
+# are `CREDIT_ROLES` in `src/local/author_contributions.py`.
+# `orcid` is optional.
+# Exactly one author must have `correspondence_author = true`.
+
+[[authors]]
+given_name = "Zebedee"
+surname = "Nicholls"
+email = "zebedee.nicholls@climate-resource.com"
+correspondence_author = true
+affiliations = ["cr", "uom-sgeas", "iiasa-ece"]
+contributions = [
+    "conceptualization",
+    "software",
+    "formal-analysis",
+    "visualization",
+    "writing-original-draft",
+]
+
+[affiliations]
+cr =  "Climate Resource, Melbourne, Australia"
+uom-sgeas = "School of Geography, Earth and Atmospheric Sciences, The University of Melbourne, Melbourne, Victoria, Australia"
+iiasa-ece = "Energy, Climate and Environment Program, International Institute for Applied Systems Analysis (IIASA), 2361 Laxenburg, Austria"

@@ -1,0 +1,108 @@
+[project]
+authors = [
+    { name = "Zebedee Nicholls", email = "zebedee.nicholls@climate-resource.com"},
+]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # The CMIP7 ScenarioMIP workflow (pre-processing to post-processing).
+    # Pinned to the commit whose workflow tests reproduce
+    # the published ScenarioMIP emissions and climate assessment
+    # (https://zenodo.org/records/19825038).
+    "gcages[cmip7scenariomip,progress]",
+    # The workflow's numerical dependencies are pinned
+    # to the versions in gcages' lock file at that commit,
+    # i.e. the versions with which its tests reproduce the published results.
+    # (Newer versions of xarray also break scmdata, which pymagicc uses.)
+    "numpy==2.2.6",
+    "pandas==2.3.1",
+    "pandas-openscm==0.9.1",
+    "pint==0.24.4",
+    "pyarrow==21.0.0",
+    "scipy==1.15.3",
+    "scmdata==0.18.0",
+    "xarray==2024.7.0",
+    # Downloading the raw scenario data from the ssp_submission database
+    "pyam-iamc>=3.0.0",
+    "requests>=2.31.0",
+    "pytask>=0.6.0",
+    "matplotlib>=3.9.4",
+    "openscm-units>=0.6.3",
+    "pyyaml>=6.0",
+    "loguru>=0.7.3",
+    "typer>=0.20.0",
+    "pre-commit>=3.3.1",
+    "jupyterlab>=4.0.0",
+    "jupytext>=1.15.2",
+    "openscm-zenodo",
+]
+name = "local"
+version = "0.1.0"
+description = "Manuscript describing simple climate model projections of the CMIP7 ScenarioMIP scenarios"
+readme = "README.md"
+
+[tool.uv.sources]
+gcages = { git = "https://github.com/openscm/gcages", rev = "c0c33d2ac83d502dc423895dc63ec06fff461960" }
+openscm-zenodo = { git = "https://github.com/openscm/OpenSCM-zenodo", rev = "c954efb46737645ca072bfb76d21a3cf7545a411" }
+
+[build-system]
+requires = ["uv_build>=0.8.7,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-include = [
+    "src/local"
+]
+
+[tool.jupytext]
+formats = "ipynb,py:percent"
+
+# Without `paths`: in pytask 0.6.0, `paths` set here overrides paths given on the command line,
+# so `pytask tasks/<some-dir>` would silently build everything.
+# Collecting from the root instead costs nothing noticeable.
+[tool.pytask.ini_options]
+
+[tool.ruff]
+src = [
+    "src",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "D",
+    "PL",
+    "TRY",
+    "NPY",
+    "RUF",
+    "UP",
+    "S",
+]
+unfixable = [ ]
+ignore = [
+    "D200",
+    "D400",
+    "UP007",
+]
+[tool.ruff.lint.per-file-ignores]
+"notebooks/*" = [
+    "D100",
+    "E402",
+    "E501",
+    "S101",
+]
+"scripts/*" = [
+    "S602",
+    "S603",
+    "S607",
+]
+# Runs pdflatex and bibtex
+"src/local/iop_latex.py" = [
+    "S603",
+    "S607",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

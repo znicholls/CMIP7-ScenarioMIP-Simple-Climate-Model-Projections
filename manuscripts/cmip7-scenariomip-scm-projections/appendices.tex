@@ -1,0 +1,12 @@
+\section{Reproduction of the published results}
+\label{app:reproduction}
+
+As part of each run, we check that we reproduce v0.2 of the published
+harmonised and infilled emissions and climate assessment
+for the CMIP7 ScenarioMIP marker scenarios (\url{https://zenodo.org/records/19825038}).
+The check is the same as the test of the workflow in gcages
+and a run fails if the check fails.
+The emissions must match exactly (to floating point precision).
+The climate assessment can differ slightly because we run MAGICC with emissions extended to 2500,
+whereas the published results come from runs with emissions which end in 2100
+(MAGICC's value in a given year depends on the next year's emissions).
